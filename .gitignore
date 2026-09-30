@@ -1,0 +1,16 @@
+# Personal mailbox data — never commit
+*.json
+!config/*.example.json
+*.jsonl
+runs/
+inv/
+links/
+trash/
+scan/
+picker.html
+results*.html
+gmail_junk_filters.xml
+*.xml
+*.log
+__pycache__/
+.DS_Store

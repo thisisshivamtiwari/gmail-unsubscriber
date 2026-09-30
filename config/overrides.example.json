@@ -1,0 +1,4 @@
+{
+  "newsletter@some-shop.example": "delete",
+  "orders@some-shop.example": "keep"
+}

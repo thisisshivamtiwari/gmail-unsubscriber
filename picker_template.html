@@ -1,0 +1,248 @@
+<title>Inbox Unsubscribe Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column; sticky tally bar; senders grouped by kind of mail, heaviest group first. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #18202c;
+  --muted: #5d6877;
+  --line: #dde2e8;
+  --accent: #2448c9;
+  --cut: #c43d2b;
+  --cut-wash: #fbece9;
+  --bar: #c9d3e6;
+  --keep: #2f7a52;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #181e26; --ink: #e6eaf0; --muted: #98a3b3; --line: #2a323d;
+    --accent: #8ea6ff; --cut: #f0836f; --cut-wash: #2c1b18; --bar: #34415a; --keep: #6fc896;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #181e26; --ink: #e6eaf0; --muted: #98a3b3; --line: #2a323d;
+  --accent: #8ea6ff; --cut: #f0836f; --cut-wash: #2c1b18; --bar: #34415a; --keep: #6fc896;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+h1 { font: 700 clamp(28px, 5vw, 40px)/1.1 var(--font-display); margin: 0 0 10px; text-wrap: balance; letter-spacing: -0.01em; }
+.lede { color: var(--muted); max-width: 62ch; margin: 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 18px 0 0; font: 500 13px var(--font-data); color: var(--muted); }
+.stats b { color: var(--ink); font-weight: 500; }
+
+.tally {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  margin-top: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  box-shadow: 0 6px 18px -12px rgba(0,0,0,.35);
+}
+.tally input[type=search] {
+  flex: 1 1 220px; min-width: 0; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 7px; padding: 8px 11px;
+}
+.count { font: 500 14px var(--font-data); font-variant-numeric: tabular-nums; }
+.count strong { color: var(--cut); font-weight: 600; }
+.status { font-size: 12.5px; color: var(--muted); flex-basis: 100%; }
+.status.ok { color: var(--keep); }
+button {
+  font: 500 13.5px var(--font-body); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+section { margin-top: 34px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.sec-head h2 { font: 600 20px/1.2 var(--font-display); margin: 0; }
+.sec-meta { font: 13px var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sec-head .spacer { flex: 1; }
+.sec-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+.link { background: none; border: 0; padding: 2px 0; color: var(--accent); font-size: 13px; }
+
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 118px minmax(0, 1.6fr); gap: 4px 14px;
+  align-items: center; padding: 9px 8px; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.row:hover { background: var(--surface); }
+.row.on { background: var(--cut-wash); }
+.row.on .name { color: var(--cut); text-decoration: line-through; text-decoration-thickness: 1px; }
+.row input { width: 17px; height: 17px; accent-color: var(--cut); margin: 0; cursor: pointer; }
+.who { min-width: 0; }
+.name { font-weight: 600; display: block; }
+.addr { font: 12px var(--font-data); color: var(--muted); overflow-wrap: anywhere; }
+.vol { display: grid; gap: 3px; font: 12.5px var(--font-data); font-variant-numeric: tabular-nums; }
+.meter { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--bar); }
+.row.on .meter i { background: var(--cut); }
+.subj { min-width: 0; color: var(--muted); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill { display: inline-block; font: 500 10.5px var(--font-data); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--cut); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 1px; }
+.empty { color: var(--muted); padding: 14px 8px; }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: 22px minmax(0, 1fr) 84px; }
+  .subj { grid-column: 2 / -1; white-space: normal; }
+}
+@media (prefers-reduced-motion: no-preference) { .row { transition: background-color .12s; } }
+</style>
+
+<div class="wrap">
+  <h1>Which senders should go?</h1>
+  <p class="lede">These are the senders in your Gmail whose emails carry an unsubscribe link. Tick every one you want gone. Your picks save automatically. When you're done, tell Claude and it will unsubscribe you from all of them.</p>
+  <div class="stats">
+    <span><b id="st-emails"></b> emails</span>
+    <span><b id="st-senders"></b> senders</span>
+    <span id="st-window"></span>
+    <span><b id="st-unread"></b> never opened</span>
+  </div>
+
+  <div class="tally" role="region" aria-label="Selection">
+    <input id="q" type="search" placeholder="Filter by name or address" aria-label="Filter senders">
+    <span class="count"><strong id="sel-n">0</strong> selected · <span id="sel-e">0</span> emails in 60 days</span>
+    <button id="copy" type="button">Copy list</button>
+    <button id="clear" type="button">Clear all</button>
+    <span class="status" id="status">Connecting…</span>
+  </div>
+
+  <div id="groups"></div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const CATS = [
+  ["news", "Newsletters & creators", ""],
+  ["money", "Banks, cards & loan offers", "Promotional mail from banks and fintech apps. Bank statements, OTPs and alerts come from different addresses and are listed under Keep."],
+  ["shop", "Shopping & food", ""],
+  ["jobs", "Job alerts", ""],
+  ["learn", "Courses, admissions & upskilling", ""],
+  ["travel", "Travel, housing & events", ""],
+  ["tech", "Software & product updates", ""],
+  ["social", "LinkedIn, Facebook & social", "LinkedIn sends from many addresses. Unsubscribing one type (for example job alerts) leaves the others running."],
+  ["keep", "Keep: account & security", "Sign-in alerts, statements, OTPs and order updates. Unsubscribing from these is not recommended."],
+];
+const TWO_PART = /\.(co|com|org|gov|ac|bank|net)\.(uk|in|sg|au)$/;
+const brand = (email) => {
+  const host = email.split("@")[1] || email;
+  const parts = host.split(".");
+  const cut = TWO_PART.test(host) ? 3 : 2;
+  const core = parts[Math.max(0, parts.length - cut)] || host;
+  return core.charAt(0).toUpperCase() + core.slice(1);
+};
+
+const picked = new Set();
+const maxCount = Math.max(...DATA.senders.map(s => s.count));
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString("en-IN");
+
+$("st-emails").textContent = fmt(DATA.threads_scanned);
+$("st-senders").textContent = fmt(DATA.senders.length);
+$("st-window").textContent = DATA.window || "";
+$("st-unread").textContent = Math.round(100 * DATA.senders.reduce((a, s) => a + s.unread, 0) / DATA.threads_scanned) + "%";
+
+function render() {
+  const q = $("q").value.trim().toLowerCase();
+  const root = $("groups");
+  root.textContent = "";
+  const sections = CATS.map(([key, title, note]) => {
+    const all = DATA.senders.filter(s => s.cat === key);
+    return { key, title, note, all, total: all.reduce((a, s) => a + s.count, 0) };
+  });
+  // Heaviest groups first; Keep always last.
+  sections.sort((a, b) => (a.key === "keep") - (b.key === "keep") || b.total - a.total);
+  for (const sec of sections) {
+    const shown = sec.all.filter(s => !q || s.email.includes(q) || brand(s.email).toLowerCase().includes(q));
+    if (q && !shown.length) continue;
+    const el = document.createElement("section");
+    const allOn = sec.all.length && sec.all.every(s => picked.has(s.email));
+    el.innerHTML = `<div class="sec-head"><h2></h2><span class="sec-meta"></span><span class="spacer"></span>
+      <button class="link" type="button"></button></div>${sec.note ? '<p class="sec-note"></p>' : ""}<ul class="rows"></ul>`;
+    el.querySelector("h2").textContent = sec.title;
+    el.querySelector(".sec-meta").textContent = `${sec.all.length} senders · ${fmt(sec.total)} emails`;
+    if (sec.note) el.querySelector(".sec-note").textContent = sec.note;
+    const toggle = el.querySelector(".link");
+    toggle.textContent = allOn ? "Clear group" : "Select whole group";
+    toggle.addEventListener("click", () => {
+      sec.all.forEach(s => allOn ? picked.delete(s.email) : picked.add(s.email));
+      changed();
+    });
+    const ul = el.querySelector("ul");
+    for (const s of shown) {
+      const li = document.createElement("li");
+      li.className = "row" + (picked.has(s.email) ? " on" : "");
+      const id = "s-" + s.email.replace(/[^a-z0-9]/g, "-");
+      const never = s.count >= 5 && s.unread === s.count;
+      li.innerHTML = `<input type="checkbox" id="${id}"><label class="who" for="${id}"><span class="name"></span><span class="addr"></span></label>
+        <span class="vol"><span></span><span class="meter"><i></i></span></span><span class="subj"></span>`;
+      const cb = li.querySelector("input");
+      cb.checked = picked.has(s.email);
+      li.querySelector(".name").textContent = brand(s.email);
+      if (never) li.querySelector(".name").insertAdjacentHTML("beforeend", '<span class="pill">never opened</span>');
+      li.querySelector(".addr").textContent = s.email;
+      li.querySelector(".vol span").textContent = `${s.count} email${s.count === 1 ? "" : "s"}`;
+      li.querySelector(".meter i").style.width = Math.max(3, 100 * Math.sqrt(s.count / maxCount)) + "%";
+      li.querySelector(".subj").textContent = s.subject ? "“" + s.subject + "”" : "";
+      li.querySelector(".subj").title = s.subject;
+      cb.addEventListener("change", () => { cb.checked ? picked.add(s.email) : picked.delete(s.email); changed(); });
+      li.addEventListener("click", (e) => { if (e.target === li || e.target.classList.contains("subj") || e.target.closest(".vol")) { cb.click(); } });
+      ul.appendChild(li);
+    }
+    root.appendChild(el);
+  }
+  if (!root.children.length) root.innerHTML = '<p class="empty">No sender matches that filter.</p>';
+  const emails = DATA.senders.filter(s => picked.has(s.email)).reduce((a, s) => a + s.count, 0);
+  $("sel-n").textContent = picked.size;
+  $("sel-e").textContent = fmt(emails);
+}
+
+let db = null, saveTimer = null, loaded = false;
+const setStatus = (text, ok) => { $("status").textContent = text; $("status").className = "status" + (ok ? " ok" : ""); };
+
+function changed() {
+  render();
+  if (!db || !loaded) return;
+  setStatus("Saving…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await db.doc("picks/main").set({ emails: [...picked].sort(), updatedAt: new Date().toISOString() });
+      setStatus(`Saved ${picked.size} picks. Tell Claude “done” when you're finished.`, true);
+    } catch (e) {
+      setStatus("Couldn't save your picks (" + (e.code || "error") + "). Use Copy list and paste it to Claude.");
+    }
+  }, 700);
+}
+
+$("q").addEventListener("input", render);
+$("clear").addEventListener("click", () => { picked.clear(); changed(); });
+$("copy").addEventListener("click", async () => {
+  const text = "Unsubscribe me from:\n" + [...picked].sort().join("\n");
+  try { await navigator.clipboard.writeText(text); setStatus("List copied. Paste it to Claude.", true); }
+  catch { setStatus("Copy was blocked. Select this text instead: " + [...picked].join(", ")); }
+});
+
+render();
+(async () => {
+  try { db = await window.claude?.use?.("db"); } catch { db = null; }
+  if (!db) { setStatus("Picks can't be saved in this view. Use Copy list and paste it to Claude."); loaded = true; return; }
+  try {
+    const snap = await db.doc("picks/main").get();
+    (snap.data()?.emails || []).forEach(e => picked.add(e));
+    setStatus(picked.size ? `Loaded your ${picked.size} saved picks.` : "Tick senders to select them. Picks save automatically.", true);
+  } catch (e) {
+    setStatus("Couldn't load saved picks (" + (e.code || "error") + "). New picks will still try to save.");
+  }
+  loaded = true;
+  render();
+})();
+</script>
